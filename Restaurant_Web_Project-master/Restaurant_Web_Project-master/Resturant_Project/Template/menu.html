@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block class %}class="sub_page"{% endblock class %}
+{% block menu_status %}active{% endblock menu_status %}
+{% load static %}
+
+{% block main %}
+
+          Our Menu
+        </h2>
+      </div>
+      <ul class="filters_menu">
+        <li class="active" data-filter="*">All</li>
+        {% for i in list %}
+        <li data-filter=".{{i.Category_name}}">{{i.Category_name}}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="filters-content">
+        <div class="row grid">
+          {% for j in items %}
+          <div class="col-sm-6 col-lg-4 all {{j.Category}}">
+            <div class="box">
+              <div>
+                <div class="img-box">
+                  <img src="/media/{{j.Image}} " alt="{{j.Image}}">
+                </div>
+                <div class="detail-box">
+                  <h5>
+                    {{j.Item_name}}
+                  </h5>
+                  <p>
+                    {{j.description}}
+                  </p>
+                  <div class="options">
+                    <h6>
+                      ₹{{j.Price}}
+                    </h6>
+                    <a href="" class="add-to-cart" data-item-id="{{j.id}}" data-item-name="{{j.Item_name}}" data-item-price="{{j.Price}}">
+                      Add to Cart
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="btn-box">
+        <a href="">
+          View More
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- end food section -->
+
+  <script>
+    // Search functionality
+    document.getElementById('menuSearch').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const menuItems = document.querySelectorAll('.menu-item');
+      
+      menuItems.forEach(item => {
+        const itemName = item.querySelector('h5').textContent.toLowerCase();
+        const itemDesc = item.querySelector('p').textContent.toLowerCase();
+        
+        if (itemName.includes(searchTerm) || itemDesc.includes(searchTerm)) {
+          item.parentElement.style.display = 'block';
+          item.style.animation = 'fadeIn 0.3s ease-in';
+        } else {
+          item.parentElement.style.display = 'none';
+        }
+      });
+    });
+
+    // Filter tags functionality
+    document.querySelectorAll('.filter-tag').forEach(tag => {
+      tag.addEventListener('click', function() {
+        // Remove active class from all tags
+        document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        const filter = this.getAttribute('data-filter');
+        const menuItems = document.querySelectorAll('.menu-item');
+        
+        menuItems.forEach(item => {
+          if (filter === '*' || item.parentElement.classList.contains(filter.replace('.', ''))) {
+            item.parentElement.style.display = 'block';
+            item.style.animation = 'fadeIn 0.3s ease-in';
+          } else {
+            item.parentElement.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Enhanced cart functionality with animations
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+      button.addEventListener('click', function() {
+        const itemId = this.getAttribute('data-item-id');
+        const itemName = this.getAttribute('data-item-name');
+        const itemPrice = this.getAttribute('data-item-price');
+        
+        // Add loading animation
+        this.classList.add('loading');
+        this.innerHTML = '<span class="spinner">⟳</span> Adding...';
+        
+        fetch('/add-to-cart/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFTOKEN': getCookie('csrftoken')
+          },
+          body: `item_id=${itemId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            // Success animation
+            this.classList.remove('loading');
+            this.classList.add('success');
+            this.innerHTML = '<span class="cart-check">✓ Added</span>';
+            
+            // Show floating notification
+            showNotification(`${itemName} added to cart!`);
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+              this.classList.remove('success');
+              this.innerHTML = '<span class="cart-text">Add to Cart</span><span class="cart-check">✓ Added</span>';
+            }, 2000);
+          } else {
+            // Error handling
+            this.classList.remove('loading');
+            this.innerHTML = '<span class="cart-text">Add to Cart</span><span class="cart-check">✓ Added</span>';
+            showNotification('Failed to add item to cart.', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          this.classList.remove('loading');
+          this.innerHTML = '<span class="cart-text">Add to Cart</span><span class="cart-check">✓ Added</span>';
+          showNotification('Network error. Please try again.', 'error');
+        });
+      });
+    });
+
+    // Notification system
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: ${type === 'success' ? '#28a745' : '#dc3545'};
+        color: white;
+        border-radius: 5px;
+        z-index: 9999;
+        animation: slideIn 0.3s ease-out;
+      `;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+  </script>
+
+<style>
+/* Simple Menu Styling */
+.img-box {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-box {
+  padding: 20px;
+  text-align: center;
+}
+
+.detail-box h5 {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.detail-box p {
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.options h6 {
+  font-weight: 600;
+  margin: 0;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 20px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn:hover {
+  background-color: #0056b3;
+  color: white;
+}
+
+.box {
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.3s;
+}
+
+.box:hover {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+</style>
+
+<script>
+// Function to get CSRF token from cookies
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Function to show notifications
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: ${type === 'success' ? '#28a745' : '#dc3545'};
+    color: white;
+    border-radius: 5px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+  `;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Enhanced cart functionality with animations
+document.querySelectorAll('.add-to-cart').forEach(button => {
+  button.addEventListener('click', function() {
+    const itemId = this.getAttribute('data-item-id');
+    const itemName = this.getAttribute('data-item-name');
+    const itemPrice = this.getAttribute('data-item-price');
+    
+    // Add loading animation
+    this.classList.add('loading');
+    this.innerHTML = '<span class="spinner">⟳</span> Adding...';
+    
+    fetch('/add-to-cart/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFTOKEN': getCookie('csrftoken')
+      },
+      body: `item_id=${itemId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.message) {
+        // Success animation
+        this.classList.remove('loading');
+        this.classList.add('success');
+        this.innerHTML = '<span class="cart-check">✓ Added</span>';
+        
+        // Show floating notification
+        showNotification(`${itemName} added to cart!`);
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+          this.classList.remove('success');
+          this.innerHTML = '<span class="cart-text">Add to Cart</span><span class="cart-check">✓ Added</span>';
+        }, 2000);
+      } else {
+        // Error handling
+        this.classList.remove('loading');
+        this.innerHTML = '<span class="cart-text">Add to Cart</span><span class="cart-check">✓ Added</span>';
+        showNotification('Failed to add item to cart.', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      this.classList.remove('loading');
+      this.innerHTML = '<span class="cart-text">Add to Cart</span>';
+      showNotification('Network error. Please try again.', 'error');
+    });
+  });
+});
+</script>
+
+{% endblock main %}

@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block main %}
+<div class="container profile-container">
+  <div class="row">
+    <!-- Profile Sidebar -->
+    <div class="col-md-4">
+      <div class="profile-sidebar">
+        <div class="profile-header text-center">
+          <div class="profile-avatar">
+            <img src="{% static 'images/default-avatar.png' %}" alt="Profile">
+          </div>
+          <h3>{{ user.get_full_name|default:user.username }}</h3>
+          <p class="text-muted">{{ user.email }}</p>
+          <div class="loyalty-badge">
+            <span class="badge bg-warning">🌟 {{ loyalty_points }} Points</span>
+          </div>
+        </div>
+        
+        <div class="profile-stats">
+          <div class="stat-item">
+            <h4>{{ total_orders }}</h4>
+            <p>Total Orders</p>
+          </div>
+          <div class="stat-item">
+            <h4>₹{{ total_spent|floatformat:0 }}</h4>
+            <p>Total Spent</p>
+          </div>
+        </div>
+        
+        <div class="profile-actions">
+          <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-block">
+            ✏️ Edit Profile
+          </a>
+          <a href="{% url 'order_history' %}" class="btn btn-outline-info btn-block">
+            📋 Order History
+          </a>
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-success btn-block">
+            📊 Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="col-md-8">
+      <!-- Quick Actions -->
+      <div class="quick-actions mb-4">
+        <h4>Quick Actions</h4>
+        <div class="row">
+          <div class="col-md-6">
+            <a href="{% url 'Menu' %}" class="action-card">
+              <div class="card-body">
+                <h5>🍽️ Order Food</h5>
+                <p>Browse our delicious menu</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-6">
+            <a href="{% url 'Book_Table' %}" class="action-card">
+              <div class="card-body">
+                <h5>📅 Book Table</h5>
+                <p>Reserve your table now</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Orders -->
+      <div class="recent-orders mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4>Recent Orders</h4>
+          <a href="{% url 'order_history' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        
+        {% if recent_orders %}
+          <div class="order-list">
+            {% for order in recent_orders %}
+            <div class="order-card">
+              <div class="order-header">
+                <div class="order-info">
+                  <h6>Order #{{ order.id }}</h6>
+                  <small class="text-muted">{{ order.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+                <div class="order-status">
+                  <span class="badge bg-{{ order.status|yesno:'success,warning,danger,info,primary,secondary' }}">
+                    {{ order.get_status_display|title }}
+                  </span>
+                </div>
+              </div>
+              <div class="order-body">
+                <p>{{ order.get_item_count }} items • ₹{{ order.total_amount }}</p>
+                <div class="order-actions">
+                  <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-info">View Details</a>
+                  <a href="{% url 'reorder' order.id %}" class="btn btn-sm btn-outline-success">🔄 Reorder</a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state text-center py-4">
+            <p class="text-muted">No orders yet. <a href="{% url 'Menu' %}">Place your first order!</a></p>
+          </div>
+        {% endif %}
+      </div>
+      
+      <!-- Favorite Items -->
+      {% if favorite_items %}
+      <div class="favorite-items mb-4">
+        <h4>Favorite Items</h4>
+        <div class="row">
+          {% for item in favorite_items %}
+          <div class="col-md-6 col-lg-4 mb-3">
+            <div class="favorite-card">
+              <img src="/media/{{ item.Image }}" alt="{{ item.Item_name }}">
+              <div class="favorite-info">
+                <h6>{{ item.Item_name }}</h6>
+                <p class="price">₹{{ item.Price }}</p>
+                <button class="btn btn-sm btn-success add-to-cart" 
+                        data-item-id="{{ item.id }}" 
+                        data-item-name="{{ item.Item_name }}" 
+                        data-item-price="{{ item.Price }}">
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Recent Bookings -->
+      {% if bookings %}
+      <div class="recent-bookings">
+        <h4>Recent Bookings</h4>
+        <div class="booking-list">
+          {% for booking in bookings %}
+          <div class="booking-card">
+            <div class="booking-info">
+              <h6>{{ booking.Name }}</h6>
+              <p class="text-muted">{{ booking.Booking_date }} • {{ booking.Total_person }} people</p>
+            </div>
+            <div class="booking-status">
+              <span class="badge bg-info">Confirmed</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.profile-container {
+  padding: 30px 0;
+}
+
+.profile-sidebar {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.profile-avatar img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #ffbe33;
+  margin-bottom: 15px;
+}
+
+.loyalty-badge {
+  margin: 15px 0;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 30px 0;
+  padding: 20px 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-item h4 {
+  color: #ffbe33;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.profile-actions {
+  margin-top: 20px;
+}
+
+.profile-actions .btn {
+  margin-bottom: 10px;
+}
+
+.action-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 15px;
+}
+
+.action-card .card-body {
+  padding: 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.action-card:hover .card-body {
+  border-color: #ffbe33;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.order-card, .booking-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.order-card:hover, .booking-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.order-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.favorite-card {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.favorite-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.favorite-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.favorite-info {
+  padding: 15px;
+}
+
+.favorite-info h6 {
+  margin-bottom: 5px;
+}
+
+.favorite-info .price {
+  color: #ffbe33;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.empty-state {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 40px;
+}
+</style>
+
+<script>
+document.querySelectorAll('.add-to-cart').forEach(button => {
+  button.addEventListener('click', function() {
+    const itemId = this.getAttribute('data-item-id');
+    const itemName = this.getAttribute('data-item-name');
+    
+    this.innerHTML = '<span class="spinner">⟳</span> Adding...';
+    this.disabled = true;
+    
+    fetch('/add-to-cart/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFTOKEN': '{{ csrf_token }}'
+      },
+      body: `item_id=${itemId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.message) {
+        this.innerHTML = '✓ Added';
+        this.classList.remove('btn-success');
+        this.classList.add('btn-outline-success');
+        showNotification(`${itemName} added to cart!`);
+      } else {
+        this.innerHTML = 'Add to Cart';
+        this.disabled = false;
+        showNotification('Failed to add item to cart.', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      this.innerHTML = 'Add to Cart';
+      this.disabled = false;
+      showNotification('Network error. Please try again.', 'error');
+    });
+  });
+});
+
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: ${type === 'success' ? '#28a745' : '#dc3545'};
+    color: white;
+    border-radius: 5px;
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+</script>
+{% endblock %}

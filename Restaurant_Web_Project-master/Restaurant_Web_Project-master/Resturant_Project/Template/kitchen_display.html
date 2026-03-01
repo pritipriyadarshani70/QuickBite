@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Kitchen Display System - Restaurant{% endblock %}
+
+{% block main %}
+<div class="container-fluid mt-4">
+    <h1 class="mb-4">Kitchen Display System (KDS)</h1>
+    
+    <!-- Pending Orders -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>Pending Orders ({{ pending_orders.count }})</h3>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for order in pending_orders %}
+        <div class="col-md-4 mb-4">
+            <div class="card order-card" data-order-id="{{ order.id }}">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: 
+                    {% if order.status == 'pending' %}#ffc107{% elif order.status == 'confirmed' %}#17a2b8{% else %}#007bff{% endif %}; 
+                    color: white;">
+                    <h5 class="mb-0">Order #{{ order.id }}</h5>
+                    <span class="badge badge-light">{{ order.status|title }}</span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Time:</strong> {{ order.created_at|time:"H:i" }}</p>
+                    <p><strong>Items:</strong> {{ order.get_item_count }}</p>
+                    
+                    <ul class="list-group mb-3">
+                        {% for item in order.orderitem_set.all %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ item.item.Item_name }}</span>
+                            <span class="badge badge-secondary">x{{ item.quantity }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <div class="btn-group w-100" role="group">
+                        {% if order.status == 'pending' %}
+                            <button class="btn btn-info update-status" data-status="confirmed">Confirm</button>
+                        {% elif order.status == 'confirmed' %}
+                            <button class="btn btn-primary update-status" data-status="preparing">Start Prep</button>
+                        {% elif order.status == 'preparing' %}
+                            <button class="btn btn-success update-status" data-status="ready">Ready</button>
+                        {% endif %}
+                        <button class="btn btn-danger update-status" data-status="cancelled">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-md-12">
+            <div class="alert alert-success">
+                <h4>All Caught Up!</h4>
+                <p>No pending orders at the moment.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Recently Completed -->
+    {% if completed_orders %}
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <h3>Recently Completed</h3>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for order in completed_orders %}
+        <div class="col-md-3 mb-3">
+            <div class="card bg-light">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">Order #{{ order.id }}</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Status:</strong> {{ order.status|title }}</p>
+                    <p class="mb-1"><strong>Items:</strong> {{ order.get_item_count }}</p>
+                    <p class="mb-0"><small>Updated: {{ order.updated_at|time:"H:i" }}</small></p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+    
+    // Handle status updates
+    document.querySelectorAll('.update-status').forEach(button => {
+        button.addEventListener('click', function() {
+            const card = this.closest('.order-card');
+            const orderId = card.getAttribute('data-order-id');
+            const newStatus = this.getAttribute('data-status');
+            
+            fetch('/update-order-status/' + orderId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'status=' + newStatus
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show notification
+                    alert('Order #' + orderId + ' updated to: ' + newStatus.toUpperCase());
+                    // Refresh page
+                    location.reload();
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+.order-card {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+.btn-group .btn {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

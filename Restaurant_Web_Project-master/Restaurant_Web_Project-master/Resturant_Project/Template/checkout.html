@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Checkout - Restaurant{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <h1 class="mb-4">Checkout</h1>
+    
+    <div class="row">
+        <!-- Order Summary -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Order Summary</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>{{ item.item.Item_name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.item.Price }}</td>
+                                <td>₹{{ item.item.Price|multiply:item.quantity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3">Total:</th>
+                                <th>₹{{ total }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delivery Details -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Delivery Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Phone Number *</label>
+                            <input type="tel" name="phone" class="form-control" required 
+                                   value="{% if profile %}{{ profile.phone }}{% endif %}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Delivery Address *</label>
+                            <textarea name="address" class="form-control" rows="3" required>{% if profile %}{{ profile.address }}{% endif %}</textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>City *</label>
+                                <input type="text" name="city" class="form-control" required
+                                       value="{% if profile %}{{ profile.city }}{% endif %}">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Postal Code *</label>
+                                <input type="text" name="postal_code" class="form-control" required
+                                       value="{% if profile %}{{ profile.postal_code }}{% endif %}">
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>Loyalty Points:</strong> You'll earn {{ cart_items|length|multiply:10 }} points with this order!
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg btn-block">
+                            Place Order - ₹{{ total }}
+                        </button>
+                        
+                        <a href="{% url 'Menu' %}" class="btn btn-secondary btn-block mt-2">
+                            Continue Shopping
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

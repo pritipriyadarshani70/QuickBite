@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reviews for {{ item.Item_name }}{% endblock %}
+
+{% block main %}
+<div class="container reviews-container">
+  <div class="row">
+    <!-- Item Info -->
+    <div class="col-md-4">
+      <div class="item-card">
+        <img src="/media/{{ item.Image }}" alt="{{ item.Item_name }}">
+        <div class="item-info">
+          <h3>{{ item.Item_name }}</h3>
+          <p class="price">₹{{ item.Price }}</p>
+          <div class="rating-summary">
+            <div class="avg-rating">
+              <span class="stars">{{ avg_rating|floatformat:1 }}</span>
+              <div class="star-rating">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= avg_rating|floatformat:0 %}
+                    <span class="star filled">⭐</span>
+                  {% else %}
+                    <span class="star">☆</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            <p class="total-reviews">{{ total_reviews }} reviews</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Rating Distribution -->
+      <div class="rating-distribution">
+        <h5>Rating Distribution</h5>
+        {% for i in "54321" %}
+          <div class="rating-bar">
+            <span class="rating-label">{{ forloop.counter }} ⭐</span>
+            <div class="bar-container">
+              <div class="bar" style="width: {% if total_reviews > 0 %}{{ rating_counts|lookup:forloop.counter|mul:100|div:total_reviews }}{% else %}0{% endif %}%"></div>
+            </div>
+            <span class="rating-count">{{ rating_counts|lookup:forloop.counter }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- Reviews Section -->
+    <div class="col-md-8">
+      <!-- Add Review Form -->
+      {% if user.is_authenticated %}
+        <div class="add-review-section">
+          <h4>{% if user_review %}Update Your Review{% else %}Write a Review{% endif %}</h4>
+          <form id="reviewForm" method="post" action="{% url 'add_review' item.id %}">
+            {% csrf_token %}
+            <div class="rating-input">
+              <label>Rating:</label>
+              <div class="star-rating-input">
+                {% for i in "12345" %}
+                  <input type="radio" id="star{{ forloop.counter }}" name="rating" value="{{ forloop.counter }}" {% if user_review and user_review.rating == forloop.counter %}checked{% endif %}>
+                  <label for="star{{ forloop.counter }}" class="star-label">⭐</label>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="review_text">Your Review:</label>
+              <textarea name="review_text" id="review_text" rows="4" class="form-control" required>{% if user_review %}{{ user_review.review_text }}{% endif %}</textarea>
+            </div>
+            {% if user_review and user_review.is_verified_purchase %}
+              <div class="verified-badge">
+                <span class="badge bg-success">✓ Verified Purchase</span>
+              </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary">
+              {% if user_review %}Update Review{% else %}Submit Review{% endif %}
+            </button>
+          </form>
+        </div>
+      {% else %}
+        <div class="login-prompt">
+          <p>Please <a href="{% url 'login' %}">login</a> to write a review.</p>
+        </div>
+      {% endif %}
+      
+      <!-- Reviews List -->
+      <div class="reviews-list">
+        <h4>Customer Reviews</h4>
+        {% if reviews %}
+          {% for review in reviews %}
+          <div class="review-card" data-review-id="{{ review.id }}">
+            <div class="review-header">
+              <div class="reviewer-info">
+                <strong>{{ review.user.username }}</strong>
+                {% if review.is_verified_purchase %}
+                  <span class="badge bg-success">✓ Verified Purchase</span>
+                {% endif %}
+              </div>
+              <div class="review-rating">
+                <span class="stars">{{ review.get_stars_display }}</span>
+                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+              </div>
+            </div>
+            <div class="review-body">
+              <p>{{ review.review_text }}</p>
+              {% if review.image %}
+                <img src="/media/{{ review.image }}" alt="Review image" class="review-image">
+              {% endif %}
+            </div>
+            <div class="review-actions">
+              {% if user.is_authenticated and user != review.user %}
+                <button class="btn btn-sm btn-outline-primary vote-btn" 
+                        data-review-id="{{ review.id }}" 
+                        data-vote-type="helpful">
+                  👍 Helpful ({{ review.helpful_votes }})
+                </button>
+                <button class="btn btn-sm btn-outline-secondary vote-btn" 
+                        data-review-id="{{ review.id }}" 
+                        data-vote-type="not_helpful">
+                  👎 Not Helpful
+                </button>
+              {% endif %}
+              {% if user.is_authenticated and user == review.user %}
+                <a href="{% url 'delete_review' review.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-reviews">
+            <p>No reviews yet. Be the first to review this item!</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.reviews-container {
+  padding: 30px 0;
+}
+
+.item-card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.item-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.item-info {
+  padding: 20px;
+}
+
+.item-info h3 {
+  margin-bottom: 10px;
+}
+
+.price {
+  color: #ffbe33;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.rating-summary {
+  text-align: center;
+  padding: 15px 0;
+  border-top: 1px solid #eee;
+}
+
+.avg-rating .stars {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ffbe33;
+}
+
+.star-rating {
+  margin: 10px 0;
+}
+
+.star {
+  font-size: 1.2rem;
+  color: #ddd;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.rating-distribution {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.rating-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.rating-label {
+  width: 60px;
+  font-size: 0.9rem;
+}
+
+.bar-container {
+  flex: 1;
+  height: 20px;
+  background: #f0f0f0;
+  border-radius: 10px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffbe33, #ff9800);
+  transition: width 0.3s ease;
+}
+
+.rating-count {
+  width: 30px;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.add-review-section {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.rating-input {
+  margin-bottom: 20px;
+}
+
+.star-rating-input {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.star-rating-input input[type="radio"] {
+  display: none;
+}
+
+.star-label {
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.star-label:hover,
+.star-rating-input input[type="radio"]:checked + .star-label {
+  transform: scale(1.2);
+}
+
+.review-card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.review-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.verified-badge {
+  margin-top: 10px;
+}
+
+.review-body {
+  margin-bottom: 15px;
+}
+
+.review-image {
+  max-width: 200px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.login-prompt {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.no-reviews {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 40px;
+  text-align: center;
+}
+</style>
+
+<script>
+document.getElementById('reviewForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const submitBtn = this.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  
+  submitBtn.innerHTML = '<span class="spinner">⟳</span> Submitting...';
+  submitBtn.disabled = true;
+  
+  fetch(this.action, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification(data.message, 'success');
+      location.reload();
+    } else {
+      showNotification(data.error || 'Failed to submit review', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('Network error. Please try again.', 'error');
+  })
+  .finally(() => {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  });
+});
+
+// Vote functionality
+document.querySelectorAll('.vote-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const reviewId = this.dataset.reviewId;
+    const voteType = this.dataset.voteType;
+    
+    this.disabled = true;
+    const originalText = this.textContent;
+    
+    fetch(`/reviews/vote/${reviewId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: `vote_type=${voteType}`
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showNotification(data.message, 'success');
+        // Update vote counts
+        if (voteType === 'helpful') {
+          this.textContent = `👍 Helpful (${data.helpful_votes})`;
+        }
+      } else {
+        showNotification(data.error || 'Failed to vote', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('Network error. Please try again.', 'error');
+    })
+    .finally(() => {
+      this.disabled = false;
+    });
+  });
+});
+
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: ${type === 'success' ? '#28a745' : '#dc3545'};
+    color: white;
+    border-radius: 5px;
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+</script>
+{% endblock %}

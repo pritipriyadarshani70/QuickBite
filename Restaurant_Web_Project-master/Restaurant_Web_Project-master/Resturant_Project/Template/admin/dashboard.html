@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard - Restaurant{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Today's Orders</h5>
+                    <h2>{{ today_orders }}</h2>
+                    <p>₹{{ today_revenue }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Today's Bookings</h5>
+                    <h2>{{ today_bookings }}</h2>
+                    <p>{{ pending_bookings }} pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Total Customers</h5>
+                    <h2>{{ total_customers }}</h2>
+                    <p>{{ total_orders }} orders</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Avg Rating</h5>
+                    <h2>{{ avg_rating }}/5</h2>
+                    <p>{{ total_reviews }} reviews</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue Stats -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Revenue Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h5>Today</h5>
+                            <h3>₹{{ today_revenue }}</h3>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5>This Week</h5>
+                            <h3>₹{{ week_revenue }}</h3>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5>This Month</h5>
+                            <h3>₹{{ month_revenue }}</h3>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5>Total</h5>
+                            <h3>₹{{ total_revenue }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Items -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Popular Items</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Orders</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in popular_items %}
+                            <tr>
+                                <td>{{ item.Item_name }}</td>
+                                <td>{{ item.order_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Recent Orders</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Item</th>
+                                <th>Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.user.username }}</td>
+                                <td>{{ order.item.Item_name }}</td>
+                                <td>{{ order.quantity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Quick Actions</h4>
+                </div>
+                <div class="card-body">
+                    <a href="/admin/" class="btn btn-primary">Django Admin</a>
+                    <a href="{% url 'Menu' %}" class="btn btn-secondary">View Menu</a>
+                    <a href="{% url 'Book_Table' %}" class="btn btn-info">View Bookings</a>
+                    <a href="{% url 'Feedback' %}" class="btn btn-warning">View Feedback</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
